@@ -101,7 +101,7 @@ def get_best_mlp(seed=42):
 
         history = train_and_test_model(train_dataloader=train_dataloader, test_dataloader=test_dataloader,
                                        model=model, loss_fn=loss_fn, optimizer=optimizer, epochs=epochs,
-                                       device="cpu", wandb=wandb, verbose=False)
+                                       device="cpu", wandb=wandb, verbose=False, early_stopping_lookback=10)
 
         # save the model
         model_name = wandb.run.id
@@ -120,9 +120,9 @@ def get_best_mlp(seed=42):
         cr = classification_report(y_true=y_true, y_pred=y_pred)
 
         report = [
-            model_name, cr, str(model)
+            model_name, "\n", cr, "\n", str(model), "\n", str(config)
         ]
-        with open(f"{folder}/report.md", "w") as report_file:
+        with open(f"{folder}/{model_name}_report.md", "w") as report_file:
             report_file.writelines(report)
 
         make_cm(

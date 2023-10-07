@@ -7,6 +7,7 @@ import wandb
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 def train(dataloader: DataLoader,
           model: nn.Module,
           loss_fn: nn.modules.loss._Loss,  # type hints are stupid and difficult for this
@@ -39,7 +40,6 @@ def test(dataloader: DataLoader,
          loss_fn: nn.modules.loss._Loss,  # type hints are stupid and difficult for this
          device: str,
          verbose: bool = False) -> tuple:
-
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
@@ -71,6 +71,7 @@ def test(dataloader: DataLoader,
     # sum(a_nested_list, []) flattens the list
     return correct, test_loss, sum(y_pred_list, []), sum(y_true_list, [])
 
+
 def train_and_test_model(
         train_dataloader: DataLoader,
         test_dataloader: DataLoader,
@@ -81,8 +82,7 @@ def train_and_test_model(
         epochs: int = 10,
         verbose: bool = False,
         wandb=None,
-        early_stopping_lookback = 5) -> dict:
-
+        early_stopping_lookback=5) -> dict:
     training_losses = []
     testing_losses = []
     testing_accuracies = []
@@ -93,7 +93,13 @@ def train_and_test_model(
         if verbose:
             print(f"Epoch {t + 1}:\n ----------------------------------------------------------")
 
-        training_loss = train(train_dataloader, model, loss_fn, optimizer, device, verbose=verbose)
+        training_loss = train(train_dataloader,
+                              model,
+                              loss_fn,
+                              optimizer,
+                              device,
+                              verbose=verbose)
+
         training_losses.append(training_loss)
 
         test_acc, test_loss, y_pred_list, y_true_list = test(test_dataloader, model, loss_fn, device, verbose=verbose)
@@ -137,7 +143,6 @@ def plot_results(history_dict,
                  folder_path,
                  title,
                  ) -> None:
-
     plt.cla()
     plt.clf()
 
