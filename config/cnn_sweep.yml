@@ -9,14 +9,14 @@ parameters:
   input_size:
     values: [224]
   filter_sizes:
-    values: [4, 16, 32, 64, 128, 256, 512]
+    values: [128, 256, 512]
   learning_rate:
     values: [0.0001, 0.00001, 0.000001]
   activation_function:
-    values: [relu, leaky_relu]
+    values: [relu]
   optimizer:
     values: [sgd, adam]
   epochs:
-    values: [40, 60]
+    values: [60, 80]
   batch_size:
     values: [32]

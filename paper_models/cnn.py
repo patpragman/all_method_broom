@@ -168,12 +168,14 @@ def get_best_artisanal_cnn(seed=42):
         plot_results(history, folder, title=f"Artisanal CNN for Image Size {config.input_size}x{config.input_size}")
 
 
-        with open(f'results/neural_networks/cnn/artisanal/{wandb.run.id}/results.md', "w") as outfile:
-            outfile.write(f"{config.input_size}x{config.input_size} images\n")
-            outfile.write(classification_report(
+        cr = classification_report(
                 y_true, y_pred, target_names=[key for key in mapping.keys()]
-            ))
-            outfile.write("\n")
+            )
+        report = [
+            f"{wandb.run.id}\n", cr, "\n", str(model)
+        ]
+        with open(f"{folder}/report.md", "w") as report_file:
+            report_file.writelines(report)
 
         torch.save(model.state_dict(), f"results/neural_networks/cnn/artisanal/{wandb.run.id}/cnn.pth")
 

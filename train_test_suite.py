@@ -53,9 +53,6 @@ def test(dataloader: DataLoader,
             X, y = X.to(device), y.to(device)
             prediction = model(X)
 
-            y_true = y.numpy().tolist()
-            y_pred = (prediction.argmax(1) == y).type(torch.float).numpy().tolist()
-
             y_true = y.cpu().numpy().tolist()  # Convert the tensor to a CPU numpy array
             y_pred = prediction.argmax(1).cpu().numpy().tolist()  # Convert the tensor to a CPU numpy array
 
@@ -71,6 +68,7 @@ def test(dataloader: DataLoader,
     if verbose:
         print(f"Test Error: \n Accuracy: {(100 * correct): >0.1f}%, avg loss: {test_loss: >8f} \n")
 
+    # sum(a_nested_list, []) flattens the list
     return correct, test_loss, sum(y_pred_list, []), sum(y_true_list, [])
 
 def train_and_test_model(
@@ -82,7 +80,8 @@ def train_and_test_model(
         device: str,
         epochs: int = 10,
         verbose: bool = False,
-        wandb=None) -> dict:
+        wandb=None,
+        early_stopping_lookback = 5) -> dict:
 
     training_losses = []
     testing_losses = []
@@ -108,11 +107,21 @@ def train_and_test_model(
             )
 
         if wandb:
+            # this is for logging at every epoch
             wandb.log({"training loss": training_loss})
             wandb.log({"testing loss": test_loss})
             wandb.log({"accuracy": test_acc})
             wandb.log({"epoch": t})
 
+        # early stopping
+        if len(testing_losses) > early_stopping_lookback > 0:
+            # if you set early_stopping_lookback to less than zero you will not perform early stopping
+            if min(testing_losses) in testing_losses[-early_stopping_lookback:]:
+                # if the smallest testing loss is in the lookback window, keep going
+                continue
+            else:
+                # otherwise, break out of the loop
+                break
 
     wandb.log({"Best_F1": f1_score(y_true_list, y_pred_list)})
 
