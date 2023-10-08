@@ -168,7 +168,7 @@ def get_best_AlexNet(seed=42):
         with open(f"{folder}/report.md", "w") as report_file:
             report_file.writelines(report)
 
-        torch.save(model.state_dict(), f"{folder}/{model_name}.pth")
+        torch.save(model, f"{folder}/{model_name}.pth")
 
         # Log hyperparameters to wandb
         wandb.log(dict(config))

@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from matplotlib import pyplot as plt
 import matplotlib
+import seaborn as sns
 matplotlib.use('Agg')  # Use the Agg backend
 
 def make_cm(y_actual=np.arange(5),
@@ -14,15 +15,17 @@ def make_cm(y_actual=np.arange(5),
     plt.cla()
     plt.clf()
 
-    confusion_mtx = confusion_matrix(y_actual, y_pred)
+    conf_matrix = confusion_matrix(y_actual, y_pred)
 
-    cm_display = ConfusionMatrixDisplay(confusion_matrix=confusion_mtx,
-                                        display_labels=labels)
-    cm_display.plot()
-    ax = plt.gca()
-    ax.set_xticklabels(labels, rotation=45)
-
-    plt.title(name)
+    # Create a heatmap to visualize the confusion matrix
+    plt.figure(figsize=(8, 6))
+    sns.set(font_scale=1.2)
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', cbar=False,
+                xticklabels=['Predicted No', 'Predicted Yes'],
+                yticklabels=['Actual No', 'Actual Yes'])
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title(f'Confusion Matrix for {name} on unseen data')
     plt.savefig(f"{path}/{name.replace(' ', '_')}.png")
 
 

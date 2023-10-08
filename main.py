@@ -6,9 +6,9 @@ from paper_models.cnn import get_best_artisanal_cnn
 from paper_models.mlp import get_best_mlp
 
 if __name__ == "__main__":
-    # get_best_mlp()
-    # get_best_AlexNet()
+    get_best_mlp()
+    get_best_AlexNet()
     get_best_resnet()
     get_best_artisanal_cnn()
-    # get_best_model_svm()
-    #get_best_model_logreg()
+    get_best_model_svm()
+    get_best_model_logreg()

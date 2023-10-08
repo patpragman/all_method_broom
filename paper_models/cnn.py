@@ -177,7 +177,7 @@ def get_best_artisanal_cnn(seed=42):
         with open(f"{folder}/report.md", "w") as report_file:
             report_file.writelines(report)
 
-        torch.save(model.state_dict(), f"results/neural_networks/cnn/artisanal/{wandb.run.id}/cnn.pth")
+        torch.save(model, f"results/neural_networks/cnn/artisanal/{wandb.run.id}/cnn.pth")
 
         # Log test accuracy to wandb
 

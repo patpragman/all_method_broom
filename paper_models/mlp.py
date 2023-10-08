@@ -134,7 +134,7 @@ def get_best_mlp(seed=42):
         plot_results(history, folder, title=f"MLP for Image Size {config.input_size}x{config.input_size}")
 
 
-        torch.save(model.state_dict(), f"{folder}/{model_name}.pth")
+        torch.save(model, f"{folder}/{model_name}.pth")
 
         # Log hyperparameters to wandb
         wandb.log(dict(config))

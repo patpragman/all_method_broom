@@ -134,7 +134,7 @@ def get_best_resnet(seed=42):
         make_cm(
             y_actual=y_true, y_pred=y_pred, labels=[key for key in mapping.keys()],
             name=f"Resnet18 for Image Size {config.input_size}x{config.input_size}",
-            path=f"results/neural_networks/transfer_learning/resnet/{wandb.run.id}"
+            path=f"results/transfer_learning/resnet/{wandb.run.id}"
         )
         print(cr)
 
@@ -147,7 +147,7 @@ def get_best_resnet(seed=42):
         with open(f"{folder}/report.md", "w") as report_file:
             report_file.writelines(report)
 
-        torch.save(model.state_dict(), f"{folder}/{model_name}.pth")
+        torch.save(model, f"{folder}/{model_name}.pth")
 
         # Log hyperparameters to wandb
         wandb.log(dict(config))
