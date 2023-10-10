@@ -1,5 +1,5 @@
 name: ResNet18-Sweep
-method: bayes
+method: grid
 project: Resnet18
 metric:
   name: testing_loss

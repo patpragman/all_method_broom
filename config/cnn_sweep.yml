@@ -1,6 +1,6 @@
 name: artisanl-cnn-sweep
 project: Artisanal CNN
-method: bayes
+method: grid
 metric:
   name: testing_loss
   goal: minimize
