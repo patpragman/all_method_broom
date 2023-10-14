@@ -19,6 +19,6 @@ parameters:
   optimizer:
     values: [sgd, adam]
   epochs:
-    values: [60, 80]
+    values: [60]
   batch_size:
     values: [32]

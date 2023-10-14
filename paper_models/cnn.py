@@ -172,7 +172,7 @@ def get_best_artisanal_cnn(seed=42):
                 y_true, y_pred, target_names=[key for key in mapping.keys()]
             )
         report = [
-            f"{wandb.run.id}\n", cr, "\n", str(model)
+            f"{wandb.run.id}\n", cr, "\n", str(model), "\n", str(config)
         ]
         with open(f"{folder}/report.md", "w") as report_file:
             report_file.writelines(report)

@@ -163,7 +163,7 @@ def get_best_AlexNet(seed=42):
         plot_results(history, folder, title=f"Modified AlexNet for Image Size {config.input_size}x{config.input_size}")
 
         report = [
-            model_name, cr, str(model)
+            model_name, "\n", cr, "\n", str(model), "\n", str(config)
         ]
         with open(f"{folder}/report.md", "w") as report_file:
             report_file.writelines(report)

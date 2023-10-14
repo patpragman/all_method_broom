@@ -142,7 +142,7 @@ def get_best_resnet(seed=42):
 
 
         report = [
-            model_name, "\n", cr, "\n", str(model)
+            model_name, "\n", cr, "\n", str(model), "\n", str(config)
         ]
         with open(f"{folder}/report.md", "w") as report_file:
             report_file.writelines(report)
