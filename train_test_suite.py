@@ -6,6 +6,7 @@ from sklearn.metrics import f1_score
 import wandb
 import pandas as pd
 import matplotlib.pyplot as plt
+import copy
 
 
 def train(dataloader: DataLoader,
@@ -82,11 +83,19 @@ def train_and_test_model(
         epochs: int = 10,
         verbose: bool = False,
         wandb=None,
-        early_stopping_lookback=5) -> dict:
+        early_stopping_lookback=5,
+) -> dict:
     training_losses = []
     testing_losses = []
     testing_accuracies = []
     epoch = []
+
+    best_score = -1
+    best_epoch = -1
+    best_model = None
+    best_y_trues = []
+    best_predictions = []
+    best_f1 = -1
 
     iterator = tqdm(range(epochs)) if not verbose else range(epochs)
     for t in iterator:
@@ -107,6 +116,14 @@ def train_and_test_model(
         testing_accuracies.append(test_acc)
         epoch.append(t)
 
+        if best_score < test_acc:
+            best_score = test_acc
+            best_epoch = t
+            # copy the model, and her predictions for that epoch - use deep copy
+            best_model = copy.deepcopy(model)
+            best_predictions = copy.deepcopy(y_pred_list)
+            best_y_trues = copy.deepcopy(y_true_list)
+
         if not verbose:
             iterator.set_description(
                 f"Training Loss: {training_loss:.2f} Testing Loss: {test_loss:.2f} Accuracy {test_acc:.2f}"
@@ -119,7 +136,7 @@ def train_and_test_model(
             wandb.log({"accuracy": test_acc})
             wandb.log({"epoch": t})
 
-        # early stopping
+        # early stopping off of loss
         if len(testing_losses) > early_stopping_lookback > 0:
             # if you set early_stopping_lookback to less than zero you will not perform early stopping
             if min(testing_losses) in testing_losses[-early_stopping_lookback:]:
@@ -129,14 +146,19 @@ def train_and_test_model(
                 # otherwise, break out of the loop
                 break
 
-    wandb.log({"Best_F1": f1_score(y_true_list, y_pred_list)})
+    last_epoch = t
+
+    if wandb:
+        wandb.log({"F1 Best Model": f1_score(best_y_trues, best_predictions)})
 
     return {"training_loss": training_losses,
             "testing_loss": testing_losses,
             "testing_accuracy": testing_accuracies,
             "epoch": epoch,
-            "Best_F1": f1_score(y_true_list, y_pred_list),
-            "y_true": y_true_list, "y_pred": y_pred_list}
+            "F1 Best Model": f1_score(best_y_trues, best_predictions),
+            "y_true": y_true_list, "y_pred": y_pred_list,
+            "best_model": best_model, "best_epoch": best_epoch, 'best_model_y_trues':best_y_trues,
+            "best_model_y_preds": best_predictions, "ending_epoch": last_epoch, "best_epoch": best_epoch}
 
 
 def plot_results(history_dict,

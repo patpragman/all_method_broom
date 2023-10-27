@@ -25,7 +25,7 @@ def make_cm(y_actual=np.arange(5),
                 yticklabels=['Actual No', 'Actual Yes'])
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
-    plt.title(f'Confusion Matrix for {name} on unseen data')
+    plt.title(f'Confusion Matrix for {name} data')
     plt.savefig(f"{path}/{name.replace(' ', '_')}.png")
 
 
