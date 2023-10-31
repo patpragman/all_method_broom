@@ -83,14 +83,13 @@ def train_and_test_model(
         epochs: int = 10,
         verbose: bool = False,
         wandb=None,
-        early_stopping_lookback=5,
+        early_stopping_lookback=10,
 ) -> dict:
     training_losses = []
     testing_losses = []
     testing_accuracies = []
     epoch = []
 
-    best_score = -1
     best_epoch = -1
     best_model = None
     best_y_trues = []
@@ -116,8 +115,10 @@ def train_and_test_model(
         testing_accuracies.append(test_acc)
         epoch.append(t)
 
-        if best_score < test_acc:
-            best_score = test_acc
+        f1 = f1_score(y_true_list, y_pred_list)
+
+        if best_f1 < f1:
+            best_f1 = f1
             best_epoch = t
             # copy the model, and her predictions for that epoch - use deep copy
             best_model = copy.deepcopy(model)
@@ -135,6 +136,7 @@ def train_and_test_model(
             wandb.log({"testing loss": test_loss})
             wandb.log({"accuracy": test_acc})
             wandb.log({"epoch": t})
+            wandb.log({"F1": f1_score(best_y_trues, best_predictions)})
 
         # early stopping off of loss
         if len(testing_losses) > early_stopping_lookback > 0:
@@ -155,7 +157,7 @@ def train_and_test_model(
             "testing_loss": testing_losses,
             "testing_accuracy": testing_accuracies,
             "epoch": epoch,
-            "F1 Best Model": f1_score(best_y_trues, best_predictions),
+            "F1 Best Model": best_f1,
             "y_true": y_true_list, "y_pred": y_pred_list,
             "best_model": best_model, "best_epoch": best_epoch, 'best_model_y_trues':best_y_trues,
             "best_model_y_preds": best_predictions, "ending_epoch": last_epoch, "best_epoch": best_epoch}
