@@ -95,6 +95,7 @@ def train_and_test_model(
     best_y_trues = []
     best_predictions = []
     best_f1 = -1
+    best_acc = -1
 
     iterator = tqdm(range(epochs)) if not verbose else range(epochs)
     for t in iterator:
@@ -118,6 +119,7 @@ def train_and_test_model(
         f1 = f1_score(y_true_list, y_pred_list)
 
         if best_f1 < f1:
+            best_acc = test_acc
             best_f1 = f1
             best_epoch = t
             # copy the model, and her predictions for that epoch - use deep copy
@@ -157,6 +159,7 @@ def train_and_test_model(
             "testing_loss": testing_losses,
             "testing_accuracy": testing_accuracies,
             "epoch": epoch,
+            "best_acc": best_acc,
             "F1 Best Model": best_f1,
             "y_true": y_true_list, "y_pred": y_pred_list,
             "best_model": best_model, "best_epoch": best_epoch, 'best_model_y_trues':best_y_trues,

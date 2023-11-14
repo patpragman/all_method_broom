@@ -12,6 +12,7 @@ from pathlib import Path
 import os
 from sklearn.cluster import KMeans
 from torchsummary import summary
+import numpy as np
 
 HOME_DIRECTORY = Path.home()
 SEED = 42
@@ -50,13 +51,20 @@ class PatNet(nn.Module):
                 layers.append(nn.Dropout(self.dropout_value))
                 layers.append(fn)
 
-
         self.mlp = nn.Sequential(*layers)
 
     def forward(self, x):
-        x = x.view(-1, 3*224*224).float()  # Flatten the input
-        kmeans_prediction = torch.Tensor(self.kmeans.predict(x)).view(-1, 1)  # kmeans off of that image
-        x = torch.cat((x, kmeans_prediction), dim=1)
+        x = x.view(-1, 3 * 224 * 224).float()  # Flatten the input
+
+        # make a list of the predictions from each encoder
+        kmeans_predictions = torch.Tensor(
+            np.array(
+                [encoder.predict(x) for encoder in self.kmeans]
+            )
+        ).view(-1, len(self.kmeans))
+
+        # kmeans_prediction = torch.Tensor(self.kmeans.predict(x)).view(-1, 1)  # kmeans off of that image
+        x = torch.cat((x, kmeans_predictions), dim=1)
         x = self.mlp(x)
         return x
 
@@ -67,28 +75,37 @@ def get_best_patnet(seed=42):
 
     sweep_id = wandb.sweep(sweep=sweep_config)
 
+    # get the data and do kmeans - this doesn't need to be done more than once
+    path = f"{HOME_DIRECTORY}/data/0.35_reduced_then_balanced/data_224"
+
+    dataset = FloatImageDataset(directory_path=path,
+                                true_folder_name="entangled", false_folder_name="not_entangled"
+                                )
+
+    training_dataset, testing_dataset = train_test_split(dataset, train_size=0.75, random_state=SEED)
+
+    # do kmeans on the encoders
+    # first train up a kmeans classifier on the data
+    print('training k-means classifier')
+    training_data = [x.reshape(-1) for (x, y) in training_dataset]
+    print('have', len(training_data), 'images of size', set(t.shape for t in training_data))
+
+    encoders = [KMeans(n_clusters=i, random_state=42) for i in [2, 4, 10]]
+    for encoder in encoders:
+        encoder.fit(training_data)
+
     def find_best_model():
-        # config for wandb
 
         # Initialize wandb
         wandb.init(project='Elodea PatNet')
         config = wandb.config
 
         # creating the model stuff
-        input_size = 3 * config.input_size ** 2 + 1  # +1 for the extra neuron with kmeans data
+        input_size = 3 * config.input_size ** 2 + len(encoders)  # +1 for the extra neuron with kmeans data
         hidden_sizes = [config.hidden_sizes for i in range(0, config.hidden_depth)]
         num_classes = 2  # this doesn't ever change
         learning_rate = config.learning_rate
         epochs = wandb.config.epochs
-
-        # get the data
-        path = f"{HOME_DIRECTORY}/data/0.35_reduced_then_balanced/data_{config.input_size}"
-
-        dataset = FloatImageDataset(directory_path=path,
-                                    true_folder_name="entangled", false_folder_name="not_entangled"
-                                    )
-
-        training_dataset, testing_dataset = train_test_split(dataset, train_size=0.75, random_state=SEED)
         batch_size = config.batch_size
 
         # create the dataloaders
@@ -96,19 +113,12 @@ def get_best_patnet(seed=42):
         test_dataloader = DataLoader(testing_dataset, batch_size=batch_size)
 
 
-        # first train up a kmeans classifier on the data
-        print('training k-means classifier')
-        training_data = [x.reshape(-1) for (x, y) in training_dataset]
-        print('have', len(training_data), 'images of size', set(t.shape for t in training_data))
-        kmeans = KMeans(n_clusters=config.kmeans_size, random_state=42)
-        kmeans.fit(training_data)
-
 
         # Create the MLP-based image classifier model
         model = PatNet(input_size,
                        hidden_sizes,
                        num_classes,
-                       kmeans=kmeans,
+                       kmeans=encoders,
                        dropout=config.dropout,
                        activation_function=config.activation_function)
 
@@ -126,7 +136,8 @@ def get_best_patnet(seed=42):
                                        model=model, loss_fn=loss_fn, optimizer=optimizer, epochs=epochs,
                                        device="cpu", wandb=wandb, verbose=False, early_stopping_lookback=10)
 
-        if history['F1 Best Model'] > 0.75:
+        # is training loss substantially bigger than testing loss?
+        if history['F1 Best Model'] > 0.80 and history['best_acc'] > 0.8:
             # I'm tired of saving hundreds of models only some of which are any good
             # narrow this down for me
 
@@ -172,7 +183,8 @@ def get_best_patnet(seed=42):
 
             # now one for the best model
             make_cm(
-                y_actual=history['best_model_y_trues'], y_pred=history['best_model_y_preds'], labels=[key for key in mapping.keys()],
+                y_actual=history['best_model_y_trues'], y_pred=history['best_model_y_preds'],
+                labels=[key for key in mapping.keys()],
                 name=f"PatNet at epoch {history['best_epoch']}",
                 path=folder
             )
@@ -188,6 +200,7 @@ def get_best_patnet(seed=42):
         wandb.log(dict(config))
 
     wandb.agent(sweep_id, function=find_best_model)
+
 
 if __name__ == "__main__":
     get_best_patnet()
