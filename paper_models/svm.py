@@ -1,3 +1,21 @@
+"""
+ChatGPT generated code summary
+
+This Python script defines an SVM classifier for image classification using sci-kit learn. The script includes
+hyperparameter tuning through grid search with cross-validation using GridSearchCV. It performs a train-test split,
+loads image data, and applies the SVM model to classify images. Results, including the best hyperparameters,
+classification reports, confusion matrices, and saved models, are logged and saved.
+
+Noteworthy points:
+1. The script performs hyperparameter tuning using GridSearchCV for the SVM classifier.
+2. The best hyperparameters and classification results are logged and saved.
+3. SVM models are saved as pickle files.
+4. The script iterates over different image sizes, performing SVM classification and logging results for each size.
+
+Ensure you have the required libraries and dataset paths configured before running this script.
+"""
+
+
 #  SVM using sci-kit learn
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report

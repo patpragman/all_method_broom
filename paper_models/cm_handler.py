@@ -1,3 +1,12 @@
+"""
+ChatGPT generated code summary
+
+This Python script defines a function `make_cm` for creating a confusion matrix heatmap using the Seaborn library.
+The script also includes a simple example of using this function with default values in the `__main__` block. The
+confusion matrix is saved as a PNG file. The script demonstrates the visualization of a confusion matrix and provides
+flexibility for customization. """
+
+
 import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from matplotlib import pyplot as plt

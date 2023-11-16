@@ -1,3 +1,22 @@
+"""
+ChatGPT generated code summary
+
+This Python script reads results from a CSV file, processes and transforms the data, and then generates a LaTeX table
+and a cleaned-up CSV file. Key steps include sorting the data based on the macro F1-score and replacing specific
+strings for better presentation in LaTeX.
+
+Noteworthy points:
+1. The script reads data from 'results.csv' and performs data manipulation.
+2. It calculates the macro F1-score and sorts the DataFrame based on this score.
+3. The script generates a new CSV file ('results2.csv') with rounded decimal values.
+4. It creates a LaTeX table and replaces specific strings for better formatting.
+5. The LaTeX table is saved to 'tex/results_table.tex'.
+6. The processed DataFrame is printed.
+
+Ensure that 'results.csv' exists and has the expected structure before running this script.
+"""
+
+
 import pandas as pd
 pd.set_option('display.precision', 2)
 pd.options.display.float_format = lambda x : '{:.0f}'.format(x) if int(x) == x else '{:,.2f}'.format(x)

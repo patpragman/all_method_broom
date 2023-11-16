@@ -4,6 +4,16 @@ Basically, I built some code that duplicates default functionality in Keras, but
 needed the flexibility of PyTorch.
 """
 
+"""
+ChatGPT generated code summary
+
+This Python script provides a simple library for training PyTorch models. It includes functions for training, 
+testing, and evaluating models. The `train` function trains a model using provided data, loss function, 
+and optimizer. The `test` function evaluates the model on a test set and returns metrics like accuracy and loss. The 
+`train_and_test_model` function combines training and testing, also supporting optional early stopping. Additionally, 
+the script contains a utility function, `plot_results`, for visualizing training and testing results. This library is 
+designed to offer flexibility in PyTorch while incorporating some conveniences inspired by Keras. """
+
 
 
 import torch

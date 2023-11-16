@@ -1,8 +1,17 @@
-import torch
+"""
+ChatGPT generated code summary
+
+This Python script defines functions for evaluating machine learning models using the PyTorch framework. The
+`predict_with_model` function takes a trained model, original and unseen datasets, a loss function, and other
+parameters to evaluate the model's performance. It calculates classification reports, confusion matrices,
+and generates heatmaps for both original validation and unseen test data. Additionally, the script includes a utility
+function, `save_misclassified_images_batch`, to visualize misclassified images. The resulting visualizations are
+saved in the "media" folder. The script is designed to be part of a broader machine learning workflow. """
+
+
 from train_test_suite import test
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
-from skimage import io
 import torch
 import matplotlib
 import seaborn as sns

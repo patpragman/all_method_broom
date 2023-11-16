@@ -1,3 +1,21 @@
+"""
+ChatGPT generated code summary
+
+This Python script defines the architecture of the PatNet model, an MLP-based image classifier with additional
+features like KMeans clustering. The script uses WandB for hyperparameter tuning through a sweep, training models
+with different configurations. The training process includes saving and logging results, creating confusion matrices,
+and generating classification reports.
+
+Note: Ensure you have the required libraries and dataset paths configured before running this script.
+
+Noteworthy differences:
+1. The PatNet model incorporates KMeans clustering in addition to MLP layers.
+2. The script performs KMeans clustering on the training data before training the model.
+3. The training process includes checking if the model is worth saving based on F1 score and accuracy criteria.
+4. The script saves both the last trained model and the best-performing model during the training process.
+"""
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim

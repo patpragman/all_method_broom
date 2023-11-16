@@ -1,3 +1,21 @@
+"""
+ChatGPT generated code summary
+
+This Python script defines a custom ResNet18 classifier for image classification using PyTorch. It includes
+functionalities for hyperparameter tuning through a sweep with WandB. The script loads a pre-trained ResNet18 model,
+freezes a specified percentage of layers, and appends custom fully connected layers for classification. Training and
+evaluation are performed on a specified dataset, and the results are saved, logged, and visualized.
+
+Noteworthy points:
+1. The custom ResNet18 classifier freezes a percentage of layers during training.
+2. The script uses WandB for hyperparameter tuning, logging, and visualization.
+3. The classification report and confusion matrix are generated and saved.
+4. The best model, training history, and reports are saved for analysis.
+
+Ensure you have the required libraries and dataset paths configured before running this script.
+"""
+
+
 import torch
 import torchvision.models as models
 import torch.nn as nn

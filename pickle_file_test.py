@@ -1,3 +1,14 @@
+"""
+ChatGPT generated code summary
+
+This Python script defines functions for testing machine learning models stored as pickle files. The primary
+function, `test_pickle_file`, loads a classifier from a pickle file, tests it on both original validation and unseen
+test datasets, and generates classification reports and confusion matrices. Visualization of the confusion matrices
+is saved in the "media" folder. The script also includes a utility function, `get_data_from_path`, to load and
+preprocess image data from a given directory path. The resulting visualizations and metrics aid in assessing the
+model's performance on the different datasets. """
+
+
 import pickle
 import os
 from pathlib import Path

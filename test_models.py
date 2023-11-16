@@ -7,6 +7,19 @@ subfolders of that, snagging all the pytorch models.  put the results into a .cs
 
 """
 
+"""
+ChatGPT generated code summary
+
+This Python script is designed to test and evaluate machine learning models stored in the "results" folder. The 
+script iterates through subfolders, identifying models in either pickle (.pkl) or PyTorch (.pth) format. For each 
+model, it performs evaluation using either the `test_pickle_file` function (for .pkl files) or the 
+`predict_with_model` function (for .pth files). The evaluation results, specifically precision, recall, and F1-score 
+for the "entangled" and "not_entangled" classes, are stored in a dictionary named `classification_reports`. Finally, 
+the script organizes this information into a pandas DataFrame and exports it to a CSV file named "results.csv". The 
+resulting CSV file is intended for further analysis in the "generate_results_table.py" script. """
+
+
+
 import os
 from pathlib import Path
 import torch

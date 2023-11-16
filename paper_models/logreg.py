@@ -1,3 +1,16 @@
+"""
+ChatGPT generated code summary
+
+This Python script implements a logistic regression model using sci-kit learn for image classification. The
+`get_best_model_logreg` function trains the logistic regression model on datasets of different image sizes and logs
+the results using the WandB library. The classification report and confusion matrix are generated and saved for each
+dataset.
+
+Note: Ensure you have the required libraries and dataset paths configured before running this script.
+
+"""
+
+
 #  Logistic Regression Model using sci-kit learn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report

@@ -1,3 +1,18 @@
+"""
+ChatGPT generated code summary
+
+This Python script defines an ArtisanalCNN class, which is a custom convolutional neural network (CNN) with tunable
+hyperparameters. The script also includes a function `get_best_artisanal_cnn` that utilizes the WandB library for
+hyperparameter tuning. The CNN is trained and tested on a dataset using the functions from the `train_test_suite`
+module, and the results, including the confusion matrix and classification report, are saved.
+
+Note: This script uses the WandB library for hyperparameter tuning, so running it may require an active WandB account
+and proper configuration.
+
+"""
+
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim

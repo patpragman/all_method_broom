@@ -1,3 +1,16 @@
+"""
+ChatGPT generated code summary
+
+This Python script defines an MLP (Multilayer Perceptron) for image classification using PyTorch and leverages WandB
+for hyperparameter tuning through sweep. The `get_best_mlp` function performs the sweep, training models with
+different configurations, and logs results using WandB. The script includes the model architecture, training process,
+and result visualization.
+
+Note: Ensure you have the required libraries and dataset paths configured before running this script.
+
+"""
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
