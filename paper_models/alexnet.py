@@ -1,5 +1,4 @@
 import os.path
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,8 +15,7 @@ HOME_DIRECTORY = Path.home()
 SEED = 42  # for consistency - I want all of the models to get the same data
 
 
-
-# Define the architecture of the MLP for image classification
+# Define the architecture of the AlexNet Clone for image classification
 class AlexNet(nn.Module):
     """
     https://blog.paperspace.com/alexnet-pytorch/
@@ -25,6 +23,7 @@ class AlexNet(nn.Module):
     the majority of the implementation comes from here and is slightly modified for the different size
     and readability.
     """
+
     def __init__(self, num_classes=2,  # we're doing binary classification, so no sense using all 10
                  activation_function='relu',
                  ):
@@ -87,18 +86,26 @@ class AlexNet(nn.Module):
         # now you can spit out the remaining x
         return x
 
-def get_best_AlexNet(seed=42):
 
+def get_best_AlexNet(seed=42):
+    """
+    this function is kind of required to make wandb work - there's likely a way to make this cleaner and not
+    repeat myself, however it worked out to be faster to do it this way.
+
+    all of the models are just slightly different enough that it was much easier time wise to go through
+    and comment them like this than it was to really do effective "DRY" architecture.
+
+    """
     with open("config/sweep.yml", "r") as yaml_file:
         sweep_config = yaml.safe_load(yaml_file)
 
     sweep_id = wandb.sweep(sweep=sweep_config)
+
     def find_best_model():
 
         # Initialize wandb
         wandb.init(project='AlexNet')
         config = wandb.config
-
 
         # creating the model stuff
         input_size = config.input_size  # AlexNet only accepts 224 x 224 sized images
@@ -109,7 +116,6 @@ def get_best_AlexNet(seed=42):
         # Create the MLP-based image classifier model
         model = AlexNet(num_classes,
                         activation_function=config.activation_function)
-
 
         path = f"{HOME_DIRECTORY}/data/0.35_reduced_then_balanced/data_{config.input_size}"
         dataset = FloatImageDataset(directory_path=path,

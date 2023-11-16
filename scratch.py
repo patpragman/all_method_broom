@@ -1,3 +1,5 @@
+# some code scratch paper to move some things around, not relevant
+
 import os
 import shutil
 

@@ -3,7 +3,7 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from matplotlib import pyplot as plt
 import matplotlib
 import seaborn as sns
-matplotlib.use('Agg')  # Use the Agg backend
+matplotlib.use('Agg')  # Use the Agg backend had to do this for support on different computers initially, YMMV
 
 def make_cm(y_actual=np.arange(5),
             y_pred=np.arange(5),

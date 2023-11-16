@@ -70,6 +70,9 @@ class PatNet(nn.Module):
 
 
 def get_best_patnet(seed=42):
+    """
+    same as the other ones, this could be wrapped better - but given how things were, spread out in different
+    """
     with open("config/patnet_sweep.yml", "r") as yaml_file:
         sweep_config = yaml.safe_load(yaml_file)
 
@@ -145,7 +148,7 @@ def get_best_patnet(seed=42):
             model_name = wandb.run.id
             print(f"model: {model_name} worth further investigation")
             print("F1 Best Model", history['F1 Best Model'])
-            folder = f"results/modified_patnet/{model_name}"
+            folder = f"results/ensemble/modified_patnet/{model_name}"
             if not os.path.isdir(folder):
                 os.mkdir(folder)
 

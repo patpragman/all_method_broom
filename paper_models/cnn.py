@@ -21,7 +21,9 @@ def calculate_conv_layer_output_size(n, p, f, s):
 
 class ArtisanalCNN(nn.Module):
     """
-    Artisanal CNN with a few tunable hyperparameters
+    Artisanal CNN with a few tunable hyperparameters, basically the filters in each of the layers
+    were what I selected.  We could definitely find better choices, and if I were to do it again,
+    I'd iterate through more structures.
 
     """
     def __init__(self,
@@ -37,7 +39,8 @@ class ArtisanalCNN(nn.Module):
         else:
             fn = nn.Tanh()
 
-        # calculate the size of the layers
+        # calculate the size of the layers - we have to do this so that the model has the right amount of inputs and
+        # outputs for each matrix.
         self.layer_1_output_size = calculate_conv_layer_output_size(sqrt(image_size/3), 1, 4, 2)//2  # divided by 2 for the pooling
         self.layer_2_output_size = calculate_conv_layer_output_size(self.layer_1_output_size, 1, 4, 2)//2
         self.layer_3_output_size = calculate_conv_layer_output_size(self.layer_2_output_size, 1, 4, 2)  # no division because no pool
@@ -90,18 +93,19 @@ class ArtisanalCNN(nn.Module):
 
 
 def get_best_artisanal_cnn(seed=42):
+    """
+    this method is just like all the other "get_best_" methods - it's a wrapper for wandb to sweep
+    through conveniently, yes, this too could have been created in a different way so I wouldn't have to
+    repeat myself, but this was the cleanest way to package them all later.  I'm sorry.
+    """
 
     with open("config/cnn_sweep.yml", "r") as yaml_file:
+        # load the config file
         sweep_config = yaml.safe_load(yaml_file)
 
     sweep_id = wandb.sweep(sweep=sweep_config)
 
     def sweep():
-
-
-        # config for wandb
-
-        # Initialize wandb
         wandb.init(project="Artisanal CNN")
         config = wandb.config
 
@@ -114,14 +118,10 @@ def get_best_artisanal_cnn(seed=42):
 
         filter_size = config.filter_sizes
 
-        print('HYPER PARAMETERS:')
         # Create the CNN-based image classifier model
         model = ArtisanalCNN(input_size,
                              filter_size, filter_size, filter_size,
                              num_classes, activation_function=config.activation_function)
-
-        print('Model Architecture:')
-        print(model)
 
         path = f"{HOME_DIRECTORY}/data/0.35_reduced_then_balanced/data_{config.input_size}"
 

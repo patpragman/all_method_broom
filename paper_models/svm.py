@@ -1,4 +1,4 @@
-#  Logistic Regression Model using sci-kit learn
+#  SVM using sci-kit learn
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -7,12 +7,16 @@ from skimage import color, io
 import os
 import pickle
 from paper_models.cm_handler import make_cm
-from pprint import pformat
 from pathlib import Path
 HOME_DIRECTORY = Path.home()
 
 def get_best_model_svm(seed=42):
+    """
+    wrapper function for wandb
 
+    :param seed: 42 - for consistency
+    :return:
+    """
     sizes = [224]
 
     results_filename = 'results/svm/svm_results.md'

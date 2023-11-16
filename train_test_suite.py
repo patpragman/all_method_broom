@@ -1,10 +1,16 @@
+"""
+This is a simple library with some convenience libraries to train my PyTorch models.
+Basically, I built some code that duplicates default functionality in Keras, but I
+needed the flexibility of PyTorch.
+"""
+
+
+
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from sklearn.metrics import f1_score
-import wandb
-import pandas as pd
 import matplotlib.pyplot as plt
 import copy
 
@@ -15,10 +21,21 @@ def train(dataloader: DataLoader,
           optimizer: torch.optim.Optimizer,
           device: str,
           verbose: bool = False) -> float:
+    """
+
+    :param dataloader: a pytorch dataloader containing the training data
+    :param model: a pytorch Module that is the instantiated neural network
+    :param loss_fn: the PyTorch loss function you're using
+    :param optimizer: similarly, the PyTorch optimizer you're using (for instance ADAM)
+    :param device: the device you're going to do the training on as a string "cpu" or "gpu" basically
+    :param verbose: flag to turn on some text output during training - kind of obnoxious but was useful for debugging
+    :return:
+    """
     size = len(dataloader.dataset)
     model.train()  # note we didn't define this, it must be in the parent class
 
     for batch, (X, y) in enumerate(dataloader):
+        # main training loop
         X, y = X.to(device), y.to(device)  # send the work to the device
 
         prediction = model(X)  # compute the prediction
@@ -41,6 +58,14 @@ def test(dataloader: DataLoader,
          loss_fn: nn.modules.loss._Loss,  # type hints are stupid and difficult for this
          device: str,
          verbose: bool = False) -> tuple:
+    """
+    :param dataloader: the test dataloader
+    :param model: the pytorch model you're testing
+    :param loss_fn: the loss function you're using
+    :param device: a string containing "cuda" or "cpu" depending on what you're trying to train on
+    :param verbose: a flag to turn on some obnoxious console output - very useful for debugging
+    :return:
+    """
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
@@ -51,6 +76,7 @@ def test(dataloader: DataLoader,
 
     with torch.no_grad():
         for X, y in dataloader:
+            # main testing loop
             X, y = X.to(device), y.to(device)
             prediction = model(X)
 
@@ -70,6 +96,8 @@ def test(dataloader: DataLoader,
         print(f"Test Error: \n Accuracy: {(100 * correct): >0.1f}%, avg loss: {test_loss: >8f} \n")
 
     # sum(a_nested_list, []) flattens the list
+    # we return a lot here - this is not what I function should do, but as the project grew I kept finding new
+    # stuff I needed to pass back as part of the optimization process.  This needs a thorough rewrite at some point
     return correct, test_loss, sum(y_pred_list, []), sum(y_true_list, [])
 
 
@@ -77,7 +105,7 @@ def train_and_test_model(
         train_dataloader: DataLoader,
         test_dataloader: DataLoader,
         model: nn.Module,
-        loss_fn: nn.modules.loss._Loss,  # type hints are stupid and difficult for pytorch
+        loss_fn: nn.modules.loss._Loss,  # type hints are stupid and difficult for pytorch - but this is your loss fn
         optimizer: torch.optim.Optimizer,
         device: str,
         epochs: int = 10,
@@ -85,6 +113,24 @@ def train_and_test_model(
         wandb=None,
         early_stopping_lookback=10,
 ) -> dict:
+    """
+    this function duplicates some of the functionality found automagically in Keras - we pass a training set,
+    and a validation set to this, and get back a dictionary of "history" containing a bunch of useful information
+    we can use later - needs a complete refactoring at some point.
+
+    :param train_dataloader: the pytorch dataloader object containing the training set
+    :param test_dataloader: the pytorch dataloader object containing the validation data (should refactor nomenclature)
+    :param model: the pytorch model you want to train
+    :param loss_fn: the loss function - typically categorical cross entropy, but you do you
+    :param optimizer: pytorch optimizer, like adam or sgd
+    :param device: the device you want to train on, this is a string with "cuda" or "gpu"
+    :param epochs: how many epochs to train - this is an integer
+    :param verbose: flag for turning on obnoxious console logging - helpful for debug, but terrible otherwise
+    :param wandb: a wandb object if you want to send stuff to wandb
+    :param early_stopping_lookback: how many epochs you want to look back for early stopping.
+    :return:
+    """
+    # instantiate a bunch of useful variables
     training_losses = []
     testing_losses = []
     testing_accuracies = []
@@ -97,6 +143,8 @@ def train_and_test_model(
     best_f1 = -1
     best_acc = -1
 
+    # tqdm performs poorly with verbose mode if you're debugging a model, so only use tqdm for
+    # a progress bar if you're not using verbose logging.
     iterator = tqdm(range(epochs)) if not verbose else range(epochs)
     for t in iterator:
         if verbose:
@@ -111,13 +159,15 @@ def train_and_test_model(
 
         training_losses.append(training_loss)
 
+        # we get a bunch of information back from test that we use to evaluate training - this needs to be refactored
+        # as this is pretty tightly coupled, still, sufficient for now (I know, there's no such thing as "good enough
+        # for now". :(
         test_acc, test_loss, y_pred_list, y_true_list = test(test_dataloader, model, loss_fn, device, verbose=verbose)
         testing_losses.append(test_loss)
         testing_accuracies.append(test_acc)
         epoch.append(t)
 
         f1 = f1_score(y_true_list, y_pred_list)
-
         if best_f1 < f1:
             best_acc = test_acc
             best_f1 = f1
@@ -128,6 +178,7 @@ def train_and_test_model(
             best_y_trues = copy.deepcopy(y_true_list)
 
         if not verbose:
+            # this let's us adjust the tqdm progress bar output
             iterator.set_description(
                 f"Training Loss: {training_loss:.2f} Testing Loss: {test_loss:.2f} Accuracy {test_acc:.2f}"
             )
@@ -155,6 +206,8 @@ def train_and_test_model(
     if wandb:
         wandb.log({"F1 Best Model": f1_score(best_y_trues, best_predictions)})
 
+    # this massive amount of return data is kind of a bummer - but this kind of grew as requirements grew throughout
+    # the project - this needs a refactor for cleanliness, but not now.
     return {"training_loss": training_losses,
             "testing_loss": testing_losses,
             "testing_accuracy": testing_accuracies,
@@ -170,6 +223,14 @@ def plot_results(history_dict,
                  folder_path,
                  title,
                  ) -> None:
+    """
+
+    :param history_dict: a history dictionary that comes from the function above
+    :param folder_path: a folder that you want to dump the contents into
+    :param title: the title - typically the name of the model you're working with
+    :return: None - matplotlib does it's thing and saves to a file
+    """
+    # clear out the old axes and plots - otherwise problems arise later.
     plt.cla()
     plt.clf()
 

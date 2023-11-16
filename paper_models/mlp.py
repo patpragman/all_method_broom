@@ -15,8 +15,6 @@ HOME_DIRECTORY = Path.home()
 SEED = 42
 
 
-
-
 # Define the architecture of the MLP for image classification
 class MLPImageClassifier(nn.Module):
     def __init__(self,
@@ -53,14 +51,18 @@ class MLPImageClassifier(nn.Module):
 
 
 def get_best_mlp(seed=42):
+    """
+    this function is another wrapper function for wandb to do the sweep, since the models were all just a little bit
+    different as I worked on them, it ended up being simpler to put these wrappers in place to initialize wandb so I
+    could do them all at the same time.  Not idea, and certainly not DRY - but was faster than rewriting a bunch of my
+    codebase
+    """
     with open("config/mlp_sweep.yml", "r") as yaml_file:
         sweep_config = yaml.safe_load(yaml_file)
 
     sweep_id = wandb.sweep(sweep=sweep_config)
 
     def find_best_model():
-        # config for wandb
-
         # Initialize wandb
         wandb.init(project='Elodea MLP')
         config = wandb.config
@@ -117,8 +119,8 @@ def get_best_mlp(seed=42):
         # create a mapping from the classes to each number class
         mapping = {n: i for i, n in enumerate(classes)}
 
+        # make pretty reports below
         cr = classification_report(y_true=y_true, y_pred=y_pred)
-
         report = [
             model_name, "\n", cr, "\n", str(model), "\n", str(config)
         ]
@@ -133,8 +135,7 @@ def get_best_mlp(seed=42):
 
         plot_results(history, folder, title=f"MLP for Image Size {config.input_size}x{config.input_size}")
 
-
-        torch.save(model, f"{folder}/{model_name}.pth")
+        torch.save(model, f"{folder}/{model_name}.pth")  # save the model
 
         # Log hyperparameters to wandb
         wandb.log(dict(config))

@@ -8,7 +8,6 @@ from skimage import color, io
 import os
 import pickle
 from paper_models.cm_handler import make_cm
-
 from pathlib import Path
 HOME_DIRECTORY = Path.home()
 
@@ -52,7 +51,8 @@ def get_best_model_logreg(seed=42):
 
         # now create an encoder
         encoder = lambda s: mapping[s]
-        decoder = lambda i: demapping[i]
+        decoder = lambda i: demapping[i]  # I don't use this - so safe to delete, but in previous versions I did
+        # I left it in for reference
 
         # now walk through and load the data in the containers we constructed above
         for root, dirs, files in os.walk(dataset_path):
@@ -97,8 +97,6 @@ def get_best_model_logreg(seed=42):
             name=f"Logistic Regression Image Size {size}x{size}",
             path=f"results/logreg"
         )
-
-        wandb.log({"msg": f"{size}x{size} complete!"})
 
         with open(results_filename, "a") as outfile:
             outfile.write(f"{size}x{size} images\n")

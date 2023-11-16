@@ -66,6 +66,13 @@ class CustomResNetClassifier(nn.Module):
 
 
 def get_best_resnet(seed=42):
+    """
+    basically the same as all the other ones - this is a wrapper function for wandb convenience
+
+
+    :param seed: unused but kept in for consistency
+    :return:
+    """
     with open("config/resnet_sweep.yml", "r") as yaml_file:
         yml = yaml.safe_load(yaml_file)
         project_name = yml['project']
@@ -83,10 +90,8 @@ def get_best_resnet(seed=42):
         learning_rate = config.learning_rate
         epochs = wandb.config.epochs
 
-
         # create a custom resnet, retraining the last percentage of the layers
         model = CustomResNetClassifier(tail_train_percentage=config.tail_train_percentage)
-
 
         path = f"{HOME_DIRECTORY}/data/0.35_reduced_then_balanced/data_{config.input_size}"
 
@@ -139,7 +144,6 @@ def get_best_resnet(seed=42):
         print(cr)
 
         plot_results(history, folder, title=f"ResNet18 for Image Size {config.input_size}x{config.input_size}")
-
 
         report = [
             model_name, "\n", cr, "\n", str(model), "\n", str(config)
