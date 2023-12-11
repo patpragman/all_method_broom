@@ -1,28 +1,18 @@
 name: patnet-hyperparam-sweep
 method: grid
-project: Elodea PatNet
+project: Elodea PatNet Redux
 metric:
   name: testing_loss
   goal: minimize
 
 parameters:
-  input_size:
-    values: [224]
-  kmeans_size:
-    values: [2, 4, 8, 16]
   hidden_sizes:
-    values: [256, 512, 1024, 2048]
-  hidden_depth:
-    values: [2, 3, 4]
+    values: [256, 512, 1024]
   learning_rate:
     values: [0.0001, 0.00001, 0.000001]
   activation_function:
-    values: [relu, leaky_relu, tanh]
+    values: [relu, leaky_relu]
   dropout:
     values: [0.2, 0.4, 0.6, 0.8]
   optimizer:
     values: [sgd, adam]
-  epochs:
-    values: [60]
-  batch_size:
-    values: [32]

@@ -154,3 +154,6 @@ def get_best_mlp(seed=42):
         wandb.log(dict(config))
 
     wandb.agent(sweep_id, function=find_best_model)
+
+if __name__ == "__main__":
+    get_best_mlp()

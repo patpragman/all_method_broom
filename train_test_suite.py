@@ -23,7 +23,7 @@ from tqdm import tqdm
 from sklearn.metrics import f1_score
 import matplotlib.pyplot as plt
 import copy
-
+from statistics import mean
 
 def train(dataloader: DataLoader,
           model: nn.Module,
@@ -177,7 +177,7 @@ def train_and_test_model(
         testing_accuracies.append(test_acc)
         epoch.append(t)
 
-        f1 = f1_score(y_true_list, y_pred_list)
+        f1 = f1_score(y_true_list, y_pred_list, average="macro")
         if best_f1 < f1:
             best_acc = test_acc
             best_f1 = f1
@@ -207,6 +207,10 @@ def train_and_test_model(
             if min(testing_losses) in testing_losses[-early_stopping_lookback:]:
                 # if the smallest testing loss is in the lookback window, keep going
                 continue
+            elif 3*mean(testing_losses[-early_stopping_lookback:]) < mean(training_losses[-early_stopping_lookback:]):
+                # let's look for overfitting now, if the 3x the mean of the testing losses during the lookback
+                # is less than the mean of the training loss during the look back, break out of the loop
+                break
             else:
                 # otherwise, break out of the loop
                 break

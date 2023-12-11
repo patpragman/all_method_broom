@@ -111,7 +111,8 @@ def get_best_patnet(seed=42):
     training_data = [x.reshape(-1) for (x, y) in training_dataset]
     print('have', len(training_data), 'images of size', set(t.shape for t in training_data))
 
-    encoders = [KMeans(n_clusters=i, random_state=42) for i in [2, 4, 10]]
+    # train the encoders once
+    encoders = [KMeans(n_clusters=i, random_state=42 + i) for i in range(2, 128, 4)]
     for encoder in encoders:
         encoder.fit(training_data)
 
@@ -122,18 +123,16 @@ def get_best_patnet(seed=42):
         config = wandb.config
 
         # creating the model stuff
-        input_size = 3 * config.input_size ** 2 + len(encoders)  # +1 for the extra neuron with kmeans data
-        hidden_sizes = [config.hidden_sizes for i in range(0, config.hidden_depth)]
+        input_size = 3 * 224 ** 2 + len(encoders)  # +1 for the extra neuron with kmeans data
+        hidden_sizes = [config.hidden_sizes for i in range(0, 3)]
         num_classes = 2  # this doesn't ever change
         learning_rate = config.learning_rate
-        epochs = wandb.config.epochs
-        batch_size = config.batch_size
+        epochs = 240
+        batch_size = 32
 
         # create the dataloaders
         train_dataloader = DataLoader(training_dataset, batch_size=batch_size)
         test_dataloader = DataLoader(testing_dataset, batch_size=batch_size)
-
-
 
         # Create the MLP-based image classifier model
         model = PatNet(input_size,
