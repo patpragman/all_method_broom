@@ -28,7 +28,7 @@ dataset = FloatImageDataset(directory_path=path,
                             true_folder_name="entangled", false_folder_name="not_entangled"
                             )
 
-training_dataset, testing_dataset = train_test_split(dataset, train_size=0.8, random_state=42)
+training_dataset, testing_dataset = train_test_split(dataset, train_size=0.8)
 
 
 
@@ -121,7 +121,7 @@ print(f"mu f1 = {mu_f1}")
 print(f"std deviation of f1 = {std_f1}")
 
 with open('scores/resnet_scores.pkl', 'wb') as pickle_file:
-    pickle.dump(pickle_file)
+    pickle.dump(results, pickle_file)
 
 print(f"mu f1 = {mu_f1}")
 print(f"std deviation of f1 = {std_f1}")

@@ -15,7 +15,6 @@ Noteworthy differences:
 4. The script saves both the last trained model and the best-performing model during the training process.
 """
 
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -83,6 +82,55 @@ class PatNet(nn.Module):
 
         # kmeans_prediction = torch.Tensor(self.kmeans.predict(x)).view(-1, 1)  # kmeans off of that image
         x = torch.cat((x, kmeans_predictions), dim=1)
+        x = self.mlp(x)
+        return x
+
+
+# non-augmented PatNet (it's just an MLP)
+class MLPComparator(nn.Module):
+    def __init__(self,
+                 input_size,
+                 hidden_sizes,
+                 num_classes,
+                 dropout,
+                 activation_function="relu"):
+        super(PatNet, self).__init__()
+
+        self.model_project = "Simple MLP to compare with PatNet"
+        self.dropout_value = dropout
+
+        layers = []
+
+        layer_sizes = [input_size] + hidden_sizes + [num_classes]
+
+        if activation_function.lower() == "relu":
+            fn = nn.ReLU()
+        elif activation_function.lower() == "leaky_relu":
+            fn = nn.LeakyReLU(0.1)
+        else:
+            fn = nn.Tanh()
+
+        for i in range(len(layer_sizes) - 1):
+            layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
+
+            if i < len(layer_sizes) - 2:
+                layers.append(nn.Dropout(self.dropout_value))
+                layers.append(fn)
+
+        self.mlp = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = x.view(-1, 3 * 224 * 224).float()  # Flatten the input
+
+        """ we commented out the patnet code so that now it's just an MLP.
+        
+        # make a list of the predictions from each encoder
+        kmeans_predictions = torch.Tensor(
+            np.array(
+                [encoder.predict(x) for encoder in self.kmeans]
+            )
+        ).view(-1, len(self.kmeans))
+        x = torch.cat((x, kmeans_predictions), dim=1)"""
         x = self.mlp(x)
         return x
 

@@ -1,5 +1,4 @@
 import torch
-import torchvision.models as models
 import torch.nn as nn
 import torch.optim as optim
 from datamodel.datamodel import FloatImageDataset, train_test_split
@@ -13,7 +12,7 @@ from statistics import stdev, mean
 from sklearn.model_selection import KFold
 from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
-from paper_models.patnet import PatNet
+from paper_models.patnet import MLPComparator
 import pickle
 from sklearn.cluster import KMeans
 
@@ -29,7 +28,7 @@ dataset = FloatImageDataset(directory_path=path,
 
 training_dataset, testing_dataset = train_test_split(dataset, train_size=0.8)
 
-# hyperparameters
+# hyperparameters - these have to be the same as patnet
 hyper_parameters_patnet = {'activation_function': 'leaky_relu',
                            'dropout': 0.2,
                            'hidden_sizes': 1024,
@@ -45,37 +44,12 @@ test_dataloader = DataLoader(testing_dataset, batch_size=hyper_parameters_patnet
 k_folds = 10  # You can choose the number of folds, 5 seemed fine
 kf = KFold(n_splits=k_folds, shuffle=True)
 
-# train the encoders once - this takes forever, so we should save them when we're donePap!2903Pap!2903
 
-# first train up a kmeans classifier on the data
-training_data = [x.reshape(-1) for (x, y) in training_dataset]
-print('have', len(training_data), 'images of size', set(t.shape for t in training_data))
-
-# train the encoders once
-if "encoder_0.pkl" not in os.listdir("patnet_encoders"):
-    print('training k-means classifier')
-
-    encoders = [KMeans(n_clusters=i) for i in range(2, 128, 4)]
-    for i, encoder in enumerate(encoders):
-        encoder.fit(training_data)
-
-        with open(f"patnet_encoders/encoder_{i}.pkl", "wb") as encoder_file:
-            pickle.dump(encoder, encoder_file)
-else:
-    print('loading old classifiers')
-    encoders = []
-    for encoder_name in os.listdir("patnet_encoders"):
-        with open(f"patnet_encoders/{encoder_name}", "rb") as encoder_file:
-            encoders.append(pickle.load(encoder_file))
-
-
-input_size = 3 * 224 ** 2 + len(encoders)  # +1 for the extra neuron with kmeans data
+input_size = 3 * 224 ** 2  # this doesn't have extra stuff in it
 
 accuracy = []
 f1_scores = []
 folds = []
-
-# train the encoders once
 
 # Training loop within each fold
 for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
@@ -98,22 +72,20 @@ for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
     class_weights = torch.tensor(class_weights, dtype=torch.float32)
     loss_fn = nn.CrossEntropyLoss(weight=class_weights, reduction="mean")
 
-    model = PatNet(input_size,
+    model = MLPComparator(input_size,
                    [hyper_parameters_patnet['hidden_sizes'], hyper_parameters_patnet['hidden_sizes']],
                    2,
-                   kmeans=encoders,
                    dropout=hyper_parameters_patnet['dropout'],
                    activation_function=hyper_parameters_patnet['activation_function'])
 
     optimizer = optim.Adam(model.parameters(), lr=hyper_parameters_patnet['learning_rate'])
-
     history = train_and_test_model(train_dataloader=fold_train_dataloader, test_dataloader=fold_val_dataloader,
                                    model=model, loss_fn=loss_fn, optimizer=optimizer,
                                    epochs=2 * hyper_parameters_patnet['epochs'],
                                    device="cpu", verbose=False, early_stopping_lookback=20)
 
     # save the model
-    folder = f"patnet_k_folds/fold_{fold}"
+    folder = f"mlp_k_folds/fold_{fold}"
     if not os.path.isdir(folder):
         os.mkdir(folder)
 
@@ -126,20 +98,20 @@ for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
     cr = classification_report(y_true=y_true, y_pred=y_pred)
     make_cm(
         y_actual=y_true, y_pred=y_pred,
-        name=f"PatNet for Fold {fold}",
+        name=f"MLP for Fold {fold}",
         path=folder
     )
     print(cr)
 
-    plot_results(history, folder, title=f"PatNet for fold {fold}")
+    plot_results(history, folder, title=f"MLP for fold {fold}")
 
     report = [
-        fr"PatNet fold {fold}", "\n", cr, "\n", str(model), "\n"
+        fr"MLP fold {fold}", "\n", cr, "\n", str(model), "\n"
     ]
     with open(f"{folder}/report.md", "w") as report_file:
         report_file.writelines(report)
 
-    torch.save(best_model, f"{folder}/patnet_{fold}.pth")
+    torch.save(best_model, f"{folder}/mlp_fold_{fold}.pth")
 
 mu_f1 = mean(f1_scores)
 std_f1 = stdev(f1_scores)
@@ -153,5 +125,6 @@ print(accuracy)
 print(f"mu f1 = {mu_f1}")
 print(f"std deviation of f1 = {std_f1}")
 
-with open('scores/patnet_scores.pkl', 'wb') as pickle_file:
+with open('scores/mlp_scores.pkl', 'wb') as pickle_file:
     pickle.dump(results, pickle_file)
+
