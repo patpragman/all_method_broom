@@ -5,7 +5,7 @@ import torch.optim as optim
 from datamodel.datamodel import FloatImageDataset, train_test_split
 from torch.utils.data import DataLoader
 from train_test_suite import train_and_test_model, plot_results
-from sklearn.metrics import classification_report, f1_score, accuracy_score
+from sklearn.metrics import classification_report
 from pathlib import Path
 from paper_models.cm_handler import make_cm
 import os
@@ -16,6 +16,9 @@ import numpy as np
 from paper_models.patnet import PatNet
 import pickle
 from sklearn.cluster import KMeans
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 
 HOME_DIRECTORY = Path.home()
 SEED = 42
@@ -45,32 +48,6 @@ test_dataloader = DataLoader(testing_dataset, batch_size=hyper_parameters_patnet
 k_folds = 10  # You can choose the number of folds, 5 seemed fine
 kf = KFold(n_splits=k_folds, shuffle=True)
 
-# train the encoders once - this takes forever, so we should save them when we're donePap!2903Pap!2903
-
-# first train up a kmeans classifier on the data
-training_data = [x.reshape(-1) for (x, y) in training_dataset]
-print('have', len(training_data), 'images of size', set(t.shape for t in training_data))
-
-# train the encoders once
-if "encoder_0.pkl" not in os.listdir("patnet_encoders"):
-    print('training k-means classifier')
-
-    encoders = [KMeans(n_clusters=i) for i in range(2, 128, 4)]
-    for i, encoder in enumerate(encoders):
-        encoder.fit(training_data)
-
-        with open(f"patnet_encoders/encoder_{i}.pkl", "wb") as encoder_file:
-            pickle.dump(encoder, encoder_file)
-else:
-    print('loading old classifiers')
-    encoders = []
-    for encoder_name in os.listdir("patnet_encoders"):
-        with open(f"patnet_encoders/{encoder_name}", "rb") as encoder_file:
-            encoders.append(pickle.load(encoder_file))
-
-
-input_size = 3 * 224 ** 2 + len(encoders)  # +1 for the extra neuron with kmeans data
-
 accuracy = []
 f1_scores = []
 folds = []
@@ -82,8 +59,11 @@ for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
     print(f"Fold {fold + 1}/{k_folds}")
     folds.append(fold + 1)
     # Split data into training and validation sets for this fold
-    fold_train_dataset = torch.utils.data.Subset(dataset, train_indices)
-    fold_val_dataset = torch.utils.data.Subset(dataset, val_indices)
+    fold_train_dataset = torch.utils.data.Subset(training_dataset, train_indices)
+
+    input_size = 3 * 224 ** 2  # +1 for the extra neuron with kmeans data
+
+    fold_val_dataset = torch.utils.data.Subset(training_dataset, val_indices)
 
     fold_train_dataloader = DataLoader(fold_train_dataset, batch_size=hyper_parameters_patnet['batch_size'], shuffle=True)
     fold_val_dataloader = DataLoader(fold_val_dataset, batch_size=hyper_parameters_patnet['batch_size'], shuffle=False)
@@ -101,7 +81,7 @@ for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
     model = PatNet(input_size,
                    [hyper_parameters_patnet['hidden_sizes'], hyper_parameters_patnet['hidden_sizes']],
                    2,
-                   kmeans=encoders,
+                   training_dataset=[x.reshape(-1) for (x, y) in fold_train_dataset],
                    dropout=hyper_parameters_patnet['dropout'],
                    activation_function=hyper_parameters_patnet['activation_function'])
 

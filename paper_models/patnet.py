@@ -28,8 +28,10 @@ import yaml
 from pathlib import Path
 import os
 from sklearn.cluster import KMeans
+from sklearn.mixture import GaussianMixture as GMM
 from torchsummary import summary
 import numpy as np
+from tqdm import tqdm
 
 HOME_DIRECTORY = Path.home()
 SEED = 42
@@ -41,18 +43,82 @@ class PatNet(nn.Module):
                  input_size,
                  hidden_sizes,
                  num_classes,
-                 kmeans,
+                 training_dataset,
                  dropout,
                  activation_function="relu"):
         super(PatNet, self).__init__()
 
-        self.kmeans = kmeans
+        # train the encoders once
+        print('Instantiating Encoders!\n')
+        encoders = [KMeans(n_clusters=i) for i in range(2, 128, 4)]
+        for encoder in tqdm(encoders):
+            encoder.fit(training_dataset)
+
+        self.kmeans = encoders
         self.model_project = "PatNet"
         self.dropout_value = dropout
 
         layers = []
 
-        layer_sizes = [input_size] + hidden_sizes + [num_classes]
+        layer_sizes = [input_size + len(encoders)] + hidden_sizes + [num_classes]
+
+        if activation_function.lower() == "relu":
+            fn = nn.ReLU()
+        elif activation_function.lower() == "leaky_relu":
+            fn = nn.LeakyReLU(0.1)
+        else:
+            fn = nn.Tanh()
+
+        for i in range(len(layer_sizes) - 1):
+            layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
+
+            if i < len(layer_sizes) - 2:
+                layers.append(nn.Dropout(self.dropout_value))
+                layers.append(fn)
+
+        self.mlp = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = x.view(-1, 3 * 224 * 224).float()  # Flatten the input
+
+        # make a list of the predictions from each encoder
+        kmeans_predictions = torch.Tensor(
+            np.array(
+                [encoder.predict(x) for encoder in self.kmeans]
+            )
+        ).view(-1, len(self.kmeans))
+
+        # kmeans_prediction = torch.Tensor(self.kmeans.predict(x)).view(-1, 1)  # kmeans off of that image
+        x = torch.cat((x, kmeans_predictions), dim=1)
+        x = self.mlp(x)
+        return x
+
+
+# Define the architecture of the MLP for image classification
+class PatNetGMM(nn.Module):
+    def __init__(self,
+                 input_size,
+                 hidden_sizes,
+                 num_classes,
+                 training_dataset,
+                 dropout,
+                 activation_function="relu"):
+        super(PatNetGMM, self).__init__()
+
+        # train the encoders once
+        print('Instantiating Encoders!')
+
+        encoders = [GMM(n_components=i, covariance_type='diag') for i in range(2, 128, 4)]
+        for encoder in tqdm(encoders):
+            encoder.fit(training_dataset)
+
+        self.kmeans = encoders
+        self.model_project = "PatNet with a Gaussian Mixture Method"
+        self.dropout_value = dropout
+
+        layers = []
+
+        layer_sizes = [input_size + len(encoders)] + hidden_sizes + [num_classes]
 
         if activation_function.lower() == "relu":
             fn = nn.ReLU()
@@ -94,7 +160,7 @@ class MLPComparator(nn.Module):
                  num_classes,
                  dropout,
                  activation_function="relu"):
-        super(PatNet, self).__init__()
+        super(MLPComparator, self).__init__()
 
         self.model_project = "Simple MLP to compare with PatNet"
         self.dropout_value = dropout
@@ -159,11 +225,6 @@ def get_best_patnet(seed=42):
     training_data = [x.reshape(-1) for (x, y) in training_dataset]
     print('have', len(training_data), 'images of size', set(t.shape for t in training_data))
 
-    # train the encoders once
-    encoders = [KMeans(n_clusters=i, random_state=42 + i) for i in range(2, 128, 4)]
-    for encoder in encoders:
-        encoder.fit(training_data)
-
     def find_best_model():
 
         # Initialize wandb
@@ -171,7 +232,7 @@ def get_best_patnet(seed=42):
         config = wandb.config
 
         # creating the model stuff
-        input_size = 3 * 224 ** 2 + len(encoders)  # +1 for the extra neuron with kmeans data
+        input_size = 3 * 224 ** 2  # +1 for the extra neuron with kmeans data
         hidden_sizes = [config.hidden_sizes for i in range(0, 3)]
         num_classes = 2  # this doesn't ever change
         learning_rate = config.learning_rate
@@ -186,7 +247,7 @@ def get_best_patnet(seed=42):
         model = PatNet(input_size,
                        hidden_sizes,
                        num_classes,
-                       kmeans=encoders,
+                       training_dataset=[x.reshape(-1) for (x, y) in training_dataset],
                        dropout=config.dropout,
                        activation_function=config.activation_function)
 

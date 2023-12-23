@@ -14,7 +14,6 @@ from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 from paper_models.patnet import MLPComparator
 import pickle
-from sklearn.cluster import KMeans
 
 HOME_DIRECTORY = Path.home()
 SEED = 42
