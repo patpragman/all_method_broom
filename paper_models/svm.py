@@ -144,3 +144,6 @@ def get_best_model_svm(seed=42):
                 y_test, y_pred, target_names=[key for key in mapping.keys()],
             ))
             results_file.write("\n")
+
+if __name__ == "__main__":
+    get_best_model_svm()

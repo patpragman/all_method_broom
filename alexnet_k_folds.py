@@ -12,21 +12,12 @@ from statistics import stdev, mean
 from sklearn.model_selection import KFold
 from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
-from paper_models.patnet import PatNetGMM
+from paper_models.alexnet import AlexNet
 import pickle
-from tqdm import tqdm
-import warnings
-from torchsummary import summary
-
-warnings.filterwarnings("ignore")
 
 HOME_DIRECTORY = Path.home()
 SEED = 42
 
-# let's make a process pool to handle doing multiple processes at once
-
-
-# run this code to train PatNet on the full dataset!
 path = f"{HOME_DIRECTORY}/data/all_data/data_224"
 
 dataset = FloatImageDataset(directory_path=path,
@@ -35,40 +26,41 @@ dataset = FloatImageDataset(directory_path=path,
 
 training_dataset, testing_dataset = train_test_split(dataset, train_size=0.8)
 
-# hyperparameters for the patnet
-hyper_parameters_patnet = {'activation_function': 'leaky_relu',
-                           'dropout': 0.2,
-                           'hidden_sizes': 1024,
-                           'learning_rate': 1e-06,
-                           'optimizer': 'sgd',
-                           "batch_size": 32, "epochs": 60}
 
-test_dataloader = DataLoader(testing_dataset, batch_size=hyper_parameters_patnet['batch_size'])
+
+# hyperparameters
+hyper_parameters = {'batch_size': 32,
+                    'epochs': 60,
+                    'input_size': 224,
+                    'learning_rate': 1e-06,
+                    'optimizer': 'sgd',  # not programmatic, but whatever
+                    "activation_function": "relu"
+                    }
+test_dataloader = DataLoader(testing_dataset, batch_size=hyper_parameters['batch_size'])
 
 # set up the loss function
 
 # Set up k-fold cross-validation on the training set
 k_folds = 10  # You can choose the number of folds, 5 seemed fine
-kf = KFold(n_splits=k_folds, shuffle=True)
+kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+iterable_splitter = enumerate(kf.split(training_dataset))
+
 
 accuracy = []
 f1_scores = []
 folds = []
 
 # Training loop within each fold
-for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
+for fold, (train_indices, val_indices) in iterable_splitter:
+
     print(f"Fold {fold + 1}/{k_folds}")
     folds.append(fold + 1)
     # Split data into training and validation sets for this fold
-    fold_train_dataset = torch.utils.data.Subset(dataset, train_indices)
+    fold_train_dataset = torch.utils.data.Subset(training_dataset, train_indices)
+    fold_val_dataset = torch.utils.data.Subset(training_dataset, val_indices)
 
-    input_size = 3 * 224 ** 2
-
-    fold_val_dataset = torch.utils.data.Subset(dataset, val_indices)
-
-    fold_train_dataloader = DataLoader(fold_train_dataset, batch_size=hyper_parameters_patnet['batch_size'],
-                                       shuffle=True)
-    fold_val_dataloader = DataLoader(fold_val_dataset, batch_size=hyper_parameters_patnet['batch_size'], shuffle=False)
+    fold_train_dataloader = DataLoader(fold_train_dataset, batch_size=hyper_parameters['batch_size'], shuffle=True)
+    fold_val_dataloader = DataLoader(fold_val_dataset, batch_size=hyper_parameters['batch_size'], shuffle=False)
 
     # Compute class weights
     labels = [y for x, y in fold_train_dataset]  # Implement a method to get all labels from your dataset
@@ -80,22 +72,15 @@ for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
     class_weights = torch.tensor(class_weights, dtype=torch.float32)
     loss_fn = nn.CrossEntropyLoss(weight=class_weights, reduction="mean")
 
-    model = PatNetGMM(input_size,
-                      [hyper_parameters_patnet['hidden_sizes'], hyper_parameters_patnet['hidden_sizes']],
-                      2,
-                      training_dataset=[x.reshape(-1) for (x, y) in fold_train_dataset],
-                      dropout=hyper_parameters_patnet['dropout'],
-                      activation_function=hyper_parameters_patnet['activation_function'])
-
-    optimizer = optim.Adam(model.parameters(), lr=hyper_parameters_patnet['learning_rate'])
+    model = AlexNet(activation_function=hyper_parameters['activation_function'])
+    optimizer = optim.Adam(model.parameters(), lr=hyper_parameters['learning_rate'])
 
     history = train_and_test_model(train_dataloader=fold_train_dataloader, test_dataloader=fold_val_dataloader,
-                                   model=model, loss_fn=loss_fn, optimizer=optimizer,
-                                   epochs=2 * hyper_parameters_patnet['epochs'],
+                                   model=model, loss_fn=loss_fn, optimizer=optimizer, epochs=2*hyper_parameters['epochs'],
                                    device="cpu", verbose=False, early_stopping_lookback=20)
 
     # save the model
-    folder = f"patnetGMM_k_folds/fold_{fold}"
+    folder = f"alex_net_k_folds/fold_{fold}"
     if not os.path.isdir(folder):
         os.mkdir(folder)
 
@@ -108,26 +93,27 @@ for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
     cr = classification_report(y_true=y_true, y_pred=y_pred)
     make_cm(
         y_actual=y_true, y_pred=y_pred,
-        name=f"PatNetGMM for Fold {fold}",
+        name=f"AlexNet for Fold {fold}",
         path=folder
     )
     print(cr)
 
-    plot_results(history, folder, title=f"PatNetGMM for fold {fold}")
+    plot_results(history, folder, title=f"AlexNet for fold {fold}")
 
     report = [
-        fr"PatNetGMM fold {fold}", "\n", cr, "\n", str(model), "\n"
+        fr"AlexNet fold {fold}", "\n", cr, "\n", str(model), "\n"
     ]
     with open(f"{folder}/report.md", "w") as report_file:
         report_file.writelines(report)
 
-    torch.save(best_model.state_dict(), f"{folder}/patnetGMM_{fold}.pth") # commented out because of memory if necessary
+    torch.save(best_model, f"{folder}/alexnet_{fold}.pth")
 
 mu_f1 = mean(f1_scores)
 std_f1 = stdev(f1_scores)
 
+
 results = {"folds": folds,
-           "f1_scores": f1_scores,
+            "f1_scores": f1_scores,
            "accuracies": accuracy}
 
 print(f1_scores)
@@ -135,5 +121,7 @@ print(accuracy)
 print(f"mu f1 = {mu_f1}")
 print(f"std deviation of f1 = {std_f1}")
 
-with open('scores/patnetGMM_scores.pkl', 'wb') as pickle_file:
+with open('scores/alexnet_scores.pkl', 'wb') as pickle_file:
     pickle.dump(results, pickle_file)
+
+best_index = torch.argmax(f1_scores)
