@@ -1,7 +1,7 @@
 import os
 from statistics import stdev, mean
-import matplotlib
 import pickle
+import matplotlib
 matplotlib.use('Agg')  # Use the Agg backend had to do this for support on different computers initially, YMMV
 
 import matplotlib.pyplot as plt
@@ -24,6 +24,6 @@ for df, title in dfs:
     df.boxplot()
     plt.ylabel(title)
     plt.title('Box Plot of K-Folds Cross Validation Various Models')
-    plt.savefig(f'boxy_big_{title}.png')
+    plt.savefig(f'boxy_big_{title}_no_patnet.png')
     plt.clf()
     plt.cla()
