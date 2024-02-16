@@ -1,15 +1,5 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn import svm
-from sklearn.datasets import make_classification
-
 import matplotlib
 matplotlib.use('Agg')  # Use the Agg backend had to do this for support on different computers initially, YMMV
-
-
-
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import svm
@@ -19,7 +9,7 @@ from sklearn.datasets import make_classification
 X, y = make_classification(n_samples=100, n_features=5, n_informative=5, n_redundant=0, n_repeated=0, n_clusters_per_class=1, random_state=42)
 
 # Create and train the SVM model
-model = svm.SVC(kernel='linear', C=1)
+model = svm.SVC(kernel='rbf', C=1)
 model.fit(X, y)
 
 # Predictions on the dataset
