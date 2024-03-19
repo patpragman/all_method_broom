@@ -19,11 +19,10 @@ for score_file in os.listdir("scores"):
 
 dfs = [(pd.DataFrame(accuracies), "Accuracy"),
        (pd.DataFrame(f1s), "Macro $F_1$ Score")]
-
 for df, title in dfs:
     df.boxplot()
     plt.ylabel(title)
     plt.title('Box Plot of K-Folds Cross Validation Various Models')
-    plt.savefig(f'boxy_big_{title}_no_patnet.png')
+    plt.savefig(f'boxy_big_{title}_renamed_patnet.png')
     plt.clf()
     plt.cla()

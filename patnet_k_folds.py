@@ -133,5 +133,5 @@ print(accuracy)
 print(f"mu f1 = {mu_f1}")
 print(f"std deviation of f1 = {std_f1}")
 
-with open('scores/patnet_scores.pkl', 'wb') as pickle_file:
+with open('scores/UBMLP_scores.pkl', 'wb') as pickle_file:
     pickle.dump(results, pickle_file)
