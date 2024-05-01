@@ -30,11 +30,12 @@ x_coord = 1
 y_coord = 0.780
 plt.plot(x_coord, y_coord, 'ro')
 plt.title('K-Folds cross validation compared to previous hyperparameter sweep')
-plt.annotate(r'Best $F_1$ from \nhyperparameter sweep', # text to display
+plt.annotate('Best $F_1$ from \nhyperparameter sweep', # text to display
              xy=(x_coord, y_coord), # the point to be annotated (arrow tip)
              xytext=(x_coord+0.1, y_coord+0.03), # the position of text (start of arrow)
              arrowprops=dict(facecolor='black', shrink=0.05), # arrow properties
              )
+plt.ylabel(r'Macro $F_1$ Score')
 
 plt.savefig('rn18box.png')
 

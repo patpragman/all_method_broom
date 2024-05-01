@@ -255,6 +255,8 @@ def plot_results(history_dict,
 
     plt.plot(epochs, training_loss, label='Training Loss')
     plt.plot(epochs, testing_loss, label='Testing Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
     plt.title(f"{title}:  Loss")
     plt.legend()
     plt.savefig(f'{folder_path}/{title}_loss.png')
@@ -264,5 +266,7 @@ def plot_results(history_dict,
 
     plt.plot(epochs, testing_accuracy, label='Testing Accuracy')
     plt.title(f"{title}:  Testing Accuracy")
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
     plt.legend()
     plt.savefig(f'{folder_path}/{title}_testacc.png')
