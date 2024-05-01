@@ -143,7 +143,7 @@ final_model = CustomResNetClassifier(tail_train_percentage=hyper_parameters['tai
 optimizer = optim.Adam(final_model.parameters(), lr=hyper_parameters['learning_rate'])
 
 history = train_and_test_model(train_dataloader=training_dataloader, test_dataloader=test_dataloader,
-                               model=model, loss_fn=loss_fn, optimizer=optimizer, epochs=2*hyper_parameters['epochs'],
+                               model=final_model, loss_fn=loss_fn, optimizer=optimizer, epochs=2*hyper_parameters['epochs'],
                                device="cpu", verbose=False, early_stopping_lookback=20)
 # save the model
 folder = f"resnet_advanced/final_model"
