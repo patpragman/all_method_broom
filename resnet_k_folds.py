@@ -166,7 +166,7 @@ print(cr)
 plot_results(history, folder, title=f"Final ResNet-18 Model")
 
 report = [
-    fr"resnet 18 final", "\n", cr, "\n", str(model), "\n", f"Best Epoch:  {history['best_epoch']}", "\n"
+    fr"resnet 18 final", "\n", cr, "\n", str(final_model), "\n", f"Best Epoch:  {history['best_epoch']}", "\n"
 ]
 with open(f"{folder}/report.md", "w") as report_file:
     report_file.writelines(report)
