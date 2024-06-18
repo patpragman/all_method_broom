@@ -45,8 +45,9 @@ class FloatImageDataset(Dataset):
                     score = onehot(full_path)
                     data['path'].append(full_path)
                     data['score'].append(score)
-                    self.labels_df = pd.DataFrame(data)
-                    self.labels_df.to_csv(f"{directory_path}/labels.csv", index=False, index_label=False)
+
+            self.labels_df = pd.DataFrame(data)
+            self.labels_df.to_csv(f"{directory_path}/labels.csv", index=False, index_label=False)
 
     def __len__(self):
         return len(self.labels_df)
