@@ -27,7 +27,7 @@ dataset = FloatImageDataset(directory_path=path,
 
 training_dataset, testing_dataset = train_test_split(dataset, train_size=0.8)
 
-# hyperparameters - these have to be the same as patnet
+# hyperparameters - these have to be the same as patnet'
 hyper_parameters_patnet = {'activation_function': 'leaky_relu',
                            'dropout': 0.2,
                            'hidden_sizes': 1024,
