@@ -35,13 +35,10 @@ dataset = FloatImageDataset(directory_path=path,
 
 training_dataset, testing_dataset = train_test_split(dataset, train_size=0.8)
 
-# hyperparameters for the patnet
-hyper_parameters_patnet = {'activation_function': 'leaky_relu',
-                           'dropout': 0.2,
-                           'hidden_sizes': 1024,
-                           'learning_rate': 1e-06,
-                           'optimizer': 'sgd',
-                           "batch_size": 32, "epochs": 60}
+# different from MLP hyperparameters, iterated on by Pat over 2 weeks
+hyper_parameters_patnet = {'activation_function': 'relu', 'dropout': 0.2,
+                           'hidden_sizes': 256, "batch_size": 32, 'epochs': 60,
+                           'learning_rate': 1e-06, 'optimizer': 'sgd'}
 
 test_dataloader = DataLoader(testing_dataset, batch_size=hyper_parameters_patnet['batch_size'])
 
@@ -121,7 +118,8 @@ for fold, (train_indices, val_indices) in enumerate(kf.split(training_dataset)):
     with open(f"{folder}/report.md", "w") as report_file:
         report_file.writelines(report)
 
-    torch.save(best_model.state_dict(), f"{folder}/patnetGMM_{fold}.pth") # commented out because of memory if necessary
+    torch.save(best_model.state_dict(),
+               f"{folder}/patnetGMM_{fold}.pth")  # commented out because of memory if necessary
 
 mu_f1 = mean(f1_scores)
 std_f1 = stdev(f1_scores)
@@ -135,5 +133,5 @@ print(accuracy)
 print(f"mu f1 = {mu_f1}")
 print(f"std deviation of f1 = {std_f1}")
 
-with open('scores/UBGMM_scores.pkl', 'wb') as pickle_file:
+with open('scores/MLP-GMM_scores.pkl', 'wb') as pickle_file:
     pickle.dump(results, pickle_file)

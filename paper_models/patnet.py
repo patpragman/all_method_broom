@@ -201,7 +201,7 @@ class MLPComparator(nn.Module):
         return x
 
 
-def get_best_patnet(seed=42):
+def get_best_patnet(type_of="patnet-k-means"):
     """
     same as the other ones, this could be wrapped better - but given how things were, spread out in different
     """
@@ -221,115 +221,139 @@ def get_best_patnet(seed=42):
 
     # do kmeans on the encoders
     # first train up a kmeans classifier on the data
-    print('training k-means classifier')
     training_data = [x.reshape(-1) for (x, y) in training_dataset]
-    print('have', len(training_data), 'images of size', set(t.shape for t in training_data))
+    print('for training we have', len(training_data), 'images of size', set(t.shape for t in training_data))
+
+    kmeans_encoders = []
+    gmm_encoders = []
 
     def find_best_model():
 
-        # Initialize wandb
-        wandb.init(project='Elodea PatNet')
-        config = wandb.config
+        try:
+            # Initialize wandb
+            wandb.init(project=f'Elodea PatNet {type_of}')
+            config = wandb.config
 
-        # creating the model stuff
-        input_size = 3 * 224 ** 2  # +1 for the extra neuron with kmeans data
-        hidden_sizes = [config.hidden_sizes for i in range(0, 3)]
-        num_classes = 2  # this doesn't ever change
-        learning_rate = config.learning_rate
-        epochs = 240
-        batch_size = 32
+            # creating the model stuff
+            input_size = 3 * 224 ** 2  # +1 for the extra neuron with kmeans data
+            hidden_sizes = [config.hidden_sizes for i in range(0, 3)]
+            num_classes = 2  # this doesn't ever change
+            learning_rate = config.learning_rate
+            epochs = 240
+            batch_size = 32
 
-        # create the dataloaders
-        train_dataloader = DataLoader(training_dataset, batch_size=batch_size)
-        test_dataloader = DataLoader(testing_dataset, batch_size=batch_size)
+            # create the dataloaders
+            train_dataloader = DataLoader(training_dataset, batch_size=batch_size)
+            test_dataloader = DataLoader(testing_dataset, batch_size=batch_size)
 
-        # Create the MLP-based image classifier model
-        model = PatNet(input_size,
-                       hidden_sizes,
-                       num_classes,
-                       training_dataset=[x.reshape(-1) for (x, y) in training_dataset],
-                       dropout=config.dropout,
-                       activation_function=config.activation_function)
+            subfolder = Path(f"results/ensemble/{type_of}")
+            Path.mkdir(subfolder, exist_ok=True)
 
-        print(summary(model, input_size=(3, 224, 224), batch_size=batch_size))
-        # Define loss function
-        loss_fn = nn.CrossEntropyLoss()
+            # Create the MLP-based image classifier model
+            print(f'instantiating {type_of} and training classifier')
 
-        # optimzer parsing logic:
-        if config.optimizer == "sgd":
-            optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
-        else:
-            optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+            if type_of == "patnet-k-means":
+                model = PatNet(input_size,
+                               hidden_sizes,
+                               num_classes,
+                               training_dataset=[x.reshape(-1) for (x, y) in training_dataset],
+                               dropout=config.dropout,
+                               activation_function=config.activation_function)
+            elif type_of == "patnet-gmm":
+                model = PatNetGMM(input_size,
+                                  hidden_sizes,
+                                  num_classes,
+                                  training_dataset=[x.reshape(-1) for (x, y) in training_dataset],
+                                  dropout=config.dropout,
+                                  activation_function=config.activation_function)
+            else:
+                raise Exception("no patnet defined!")
 
-        history = train_and_test_model(train_dataloader=train_dataloader, test_dataloader=test_dataloader,
-                                       model=model, loss_fn=loss_fn, optimizer=optimizer, epochs=epochs,
-                                       device="cpu", wandb=wandb, verbose=False, early_stopping_lookback=10)
+            print(summary(model, input_size=(3, 224, 224), batch_size=batch_size))
+            # Define loss function
+            loss_fn = nn.CrossEntropyLoss()
 
-        # is training loss substantially bigger than testing loss?
-        if history['F1 Best Model'] > 0.80 and history['best_acc'] > 0.8:
-            # I'm tired of saving hundreds of models only some of which are any good
-            # narrow this down for me
+            # optimzer parsing logic:
+            if config.optimizer == "sgd":
+                optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+            else:
+                optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-            # save the model
-            model_name = wandb.run.id
-            print(f"model: {model_name} worth further investigation")
-            print("F1 Best Model", history['F1 Best Model'])
-            folder = f"results/ensemble/modified_patnet/{model_name}"
-            if not os.path.isdir(folder):
-                os.mkdir(folder)
+            history = train_and_test_model(train_dataloader=train_dataloader, test_dataloader=test_dataloader,
+                                           model=model, loss_fn=loss_fn, optimizer=optimizer, epochs=epochs,
+                                           device="cpu", wandb=wandb, verbose=False, early_stopping_lookback=10)
 
-            y_true, y_pred = history['y_true'], history['y_pred']
-            best_model = history['best_model']
-            best_y_preds = history['best_model_y_preds']
+            # is training loss substantially bigger than testing loss?
+            if history['F1 Best Model'] > 0.79 and history['best_acc'] > 0.79:
+                # I'm tired of saving hundreds of models only some of which are any good
+                # narrow this down for me
 
-            classes = [str(klass).split("/")[-1] for klass in Path(path).iterdir()
-                       if klass.is_dir()]
+                # save the model
+                model_name = wandb.run.id
+                print(f"model: {model_name} worth further investigation")
+                print("F1 Best Model", history['F1 Best Model'])
 
-            # create a mapping from the classes to each number class
-            mapping = {n: i for i, n in enumerate(classes)}
+                folder = Path(f"{subfolder}/{model_name}")
+                Path.mkdir(folder, exist_ok=True)
 
-            # make a report classification report of the last model to train, and the best model trained
-            cr = classification_report(y_true=y_true, y_pred=y_pred)
-            report = [
-                f'last_{model_name}', "\n", cr, "\n", str(model), "\n", str(config)
-            ]
-            with open(f"{folder}/last_{model_name}_report.md", "w") as report_file:
-                report_file.writelines(report)
+                y_true, y_pred = history['y_true'], history['y_pred']
+                best_model = history['best_model']
+                best_y_preds = history['best_model_y_preds']
 
-            cr = classification_report(y_true=history['best_model_y_trues'], y_pred=best_y_preds)
-            report = [
-                f'best_{model_name}', "\n", cr, "\n", str(best_model), "\n", str(config)
-            ]
-            with open(f"{folder}/best_{model_name}_report.md", "w") as report_file:
-                report_file.writelines(report)
+                classes = [str(klass).split("/")[-1] for klass in Path(path).iterdir()
+                           if klass.is_dir()]
 
-            # make a cm for the last model trained
-            make_cm(
-                y_actual=y_true, y_pred=y_pred, labels=[key for key in mapping.keys()],
-                name=f"Dropout PatNet at epoch {history['ending_epoch']}",
-                path=folder
-            )
+                # create a mapping from the classes to each number class
+                mapping = {n: i for i, n in enumerate(classes)}
 
-            # now one for the best model
-            make_cm(
-                y_actual=history['best_model_y_trues'], y_pred=history['best_model_y_preds'],
-                labels=[key for key in mapping.keys()],
-                name=f"PatNet at epoch {history['best_epoch']}",
-                path=folder
-            )
+                # make a report classification report of the last model to train, and the best model trained
+                cr = classification_report(y_true=y_true, y_pred=y_pred)
+                report = [
+                    f'last_{model_name}', "\n", cr, "\n", str(model), "\n", str(config)
+                ]
+                with open(f"{folder}/last_{model_name}_report.md", "w") as report_file:
+                    report_file.writelines(report)
 
-            plot_results(history, folder, title=f"PatNet for Image Size {config.input_size}x{config.input_size}")
+                cr = classification_report(y_true=history['best_model_y_trues'], y_pred=best_y_preds)
+                report = [
+                    f'best_{model_name}', "\n", cr, "\n", str(best_model), "\n", str(config)
+                ]
+                with open(f"{folder}/best_{model_name}_report.md", "w") as report_file:
+                    report_file.writelines(report)
 
-            torch.save(history['best_model'], f"{folder}/best_{model_name}.pth")
-            torch.save(model, f"{folder}/last_{model_name}.pth")
-        else:
-            print('model not worth saving')
+                # make a cm for the last model trained
+                make_cm(
+                    y_actual=y_true, y_pred=y_pred, labels=[key for key in mapping.keys()],
+                    name=f"Dropout PatNet at epoch {history['ending_epoch']}",
+                    path=folder
+                )
 
-        # Log hyperparameters to wandb
-        wandb.log(dict(config))
+                # now one for the best model
+                make_cm(
+                    y_actual=history['best_model_y_trues'], y_pred=history['best_model_y_preds'],
+                    labels=[key for key in mapping.keys()],
+                    name=f"{type_of} at epoch {history['best_epoch']}",
+                    path=folder
+                )
+
+                plot_results(history, folder, title=f"{type_of} for Image Size {config.input_size}x{config.input_size}")
+
+                torch.save(history['best_model'], f"{folder}/best_{model_name}.pth")
+                torch.save(model, f"{folder}/last_{model_name}.pth")
+            else:
+                print('model not worth saving')
+
+            # Log hyperparameters to wandb
+            wandb.log(dict(config))
+        except Exception as err:
+            print('Exception experienced - maybe threading in wandb?')
+            print(err)
 
     wandb.agent(sweep_id, function=find_best_model)
 
 
 if __name__ == "__main__":
-    get_best_patnet()
+    print('starting with gmm')
+    get_best_patnet(type_of="patnet-gmm")
+    print('now onto k-means')
+    get_best_patnet(type_of="patnet-k-means")
