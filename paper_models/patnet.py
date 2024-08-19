@@ -45,14 +45,16 @@ class PatNet(nn.Module):
                  num_classes,
                  training_dataset,
                  dropout,
+                 encoders=[],
                  activation_function="relu"):
         super(PatNet, self).__init__()
 
-        # train the encoders once
-        print('Instantiating Encoders!\n')
-        encoders = [KMeans(n_clusters=i) for i in range(2, 128, 4)]
-        for encoder in tqdm(encoders):
-            encoder.fit(training_dataset)
+        # train the encoders once if they haven't been supplied
+        if not encoders:
+            print('Instantiating Encoders!\n')
+            encoders = [KMeans(n_clusters=i) for i in range(2, 128, 4)]
+            for encoder in tqdm(encoders):
+                encoder.fit(training_dataset)
 
         self.kmeans = encoders
         self.model_project = "PatNet"
@@ -101,16 +103,17 @@ class PatNetGMM(nn.Module):
                  hidden_sizes,
                  num_classes,
                  training_dataset,
-                 dropout,
+                 dropout, encoders=[],
                  activation_function="relu"):
         super(PatNetGMM, self).__init__()
 
-        # train the encoders once
-        print('Instantiating Encoders!')
+        # train the encoders once if they're not provided
+        if not encoders:
+            print('Instantiating Encoders!')
 
-        encoders = [GMM(n_components=i, covariance_type='diag') for i in range(2, 128, 4)]
-        for encoder in tqdm(encoders):
-            encoder.fit(training_dataset)
+            encoders = [GMM(n_components=i, covariance_type='diag') for i in range(2, 128, 4)]
+            for encoder in tqdm(encoders):
+                encoder.fit(training_dataset)
 
         self.kmeans = encoders
         self.model_project = "PatNet with a Gaussian Mixture Method"
@@ -213,19 +216,29 @@ def get_best_patnet(type_of="patnet-k-means"):
     # get the data and do kmeans - this doesn't need to be done more than once
     path = f"{HOME_DIRECTORY}/data/0.35_reduced_then_balanced/data_224"
 
+    # some variables we'll need elsewhere
+    epochs = 240
+    batch_size = 32
+
     dataset = FloatImageDataset(directory_path=path,
                                 true_folder_name="entangled", false_folder_name="not_entangled"
                                 )
 
     training_dataset, testing_dataset = train_test_split(dataset, train_size=0.75, random_state=SEED)
 
+    # create the dataloaders
+    train_dataloader = DataLoader(training_dataset, batch_size=batch_size)
+    test_dataloader = DataLoader(testing_dataset, batch_size=batch_size)
+
     # do kmeans on the encoders
     # first train up a kmeans classifier on the data
     training_data = [x.reshape(-1) for (x, y) in training_dataset]
     print('for training we have', len(training_data), 'images of size', set(t.shape for t in training_data))
+    print('Training Kmeans Encoders')
 
-    kmeans_encoders = []
-    gmm_encoders = []
+    kmeans_encoders = [KMeans(n_clusters=i).fit(training_data) for i in range(2, 128, 4)]
+    print('Training GMM Encoders')
+    gmm_encoders = [GMM(n_components=i, covariance_type='diag').fit(training_data) for i in range(2, 128, 4)]
 
     def find_best_model():
 
@@ -239,12 +252,9 @@ def get_best_patnet(type_of="patnet-k-means"):
             hidden_sizes = [config.hidden_sizes for i in range(0, 3)]
             num_classes = 2  # this doesn't ever change
             learning_rate = config.learning_rate
-            epochs = 240
-            batch_size = 32
 
-            # create the dataloaders
-            train_dataloader = DataLoader(training_dataset, batch_size=batch_size)
-            test_dataloader = DataLoader(testing_dataset, batch_size=batch_size)
+
+
 
             subfolder = Path(f"results/ensemble/{type_of}")
             Path.mkdir(subfolder, exist_ok=True)
@@ -257,14 +267,14 @@ def get_best_patnet(type_of="patnet-k-means"):
                                hidden_sizes,
                                num_classes,
                                training_dataset=[x.reshape(-1) for (x, y) in training_dataset],
-                               dropout=config.dropout,
+                               dropout=config.dropout, encoders=kmeans_encoders,
                                activation_function=config.activation_function)
             elif type_of == "patnet-gmm":
                 model = PatNetGMM(input_size,
                                   hidden_sizes,
                                   num_classes,
                                   training_dataset=[x.reshape(-1) for (x, y) in training_dataset],
-                                  dropout=config.dropout,
+                                  dropout=config.dropout, encoders=gmm_encoders,
                                   activation_function=config.activation_function)
             else:
                 raise Exception("no patnet defined!")
